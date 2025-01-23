@@ -1,0 +1,104 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(ulid())
+  email           String        @unique
+  phone           String
+  name            String
+  password        String?
+  role            Role
+  isEmailVerified Boolean       @default(false)
+  status          Boolean       @default(false)
+  deleted         Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  Token           Token[]
+  OTP             OTP[]
+  Transaction     Transaction[]
+}
+
+enum Role {
+  ADMIN
+  PARTNER
+  RECEPTIONIST
+}
+
+model Student {
+  id         String      @id @default(ulid())
+  name       String
+  email      String      @unique
+  phone      String
+  feesPaid   Float
+  totalFees  Float
+  password   String      @default("12345678") // Default password for student portal
+  admissions Admission[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Admission {
+  id            String      @id @default(ulid())
+  studentId     String
+  student       Student     @relation(fields: [studentId], references: [id])
+  date          DateTime    @default(now())
+  course        String
+  fees          Float
+  transactionId String      @unique // Link to Transaction record
+  transaction   Transaction @relation(fields: [transactionId], references: [id]) // Automatically created transaction
+}
+
+model Transaction {
+  id           String          @id @default(ulid())
+  amount       Float
+  type         TransactionType // EARNING or EXPENSE
+  description  String?
+  documentLink String? // Link to uploaded document (for expenses or other transactions)
+  userId       String // Reference to user who recorded it
+  user         User?           @relation(fields: [userId], references: [id])
+  Admission    Admission?
+  createdAt    DateTime        @default(now())
+}
+
+enum TransactionType {
+  EARNING
+  EXPENSE
+}
+
+model OTP {
+  id        String   @id @default(ulid())
+  otp       String   @db.VarChar(6)
+  token     String   @unique @db.VarChar(36)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+
+  @@index([token])
+}
+
+model Token {
+  id          String    @id @default(ulid())
+  token       String    @db.VarChar(255)
+  type        TokenType
+  expires     DateTime
+  blacklisted Boolean
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
+  RESET_PASSWORD
+  VERIFY_EMAIL
+}

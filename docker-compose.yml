@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    image: server
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - mysqldb
+    networks:
+      - node-network
+    env_file:
+      - .env
+      # establish docker compose watch mode for the api service
+    develop:
+      # specify the files to watch for changes
+      watch:
+        # it'll watch for changes in package.json and package-lock.json and rebuild the container and image if there are any changes
+        - path: ./package.json
+          action: rebuild
+        - path: ./yarn.lock
+          action: rebuild
+        # it'll watch for changes in the backend directory and sync the changes with the container real time
+        - path: ./
+          target: /app/backend
+          action: sync
+
+  mysqldb:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      # So you don't have to use root, but you can if you like
+      MYSQL_USER: ${MYSQL_USER}
+      # You can use whatever password you like
+      MYSQL_PASSWORD: ${MYSQL_USER_PASSWORD}
+      # Password for root access
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    expose:
+      # Opens port 3306 on the container
+      - "3306"
+      # Where our data will be persisted
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./grant-privileges.sql:/docker-entrypoint-initdb.d/grant-privileges.sql
+    networks:
+      - node-network
+
+volumes:
+  dbdata:
+    driver: local
+
+networks:
+  node-network:
+    driver: bridge
