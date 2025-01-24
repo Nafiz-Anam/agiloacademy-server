@@ -1,4 +1,3 @@
-/* eslint-disable indent */
 import { User, Role, Prisma } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
@@ -10,8 +9,6 @@ import { encryptPassword } from "../utils/encryption";
  * @param {string} name
  * @param {string} email
  * @param {string} phone
- * @param {string} role
- * @param {string} companyId - Optional, ID of the company to link the user
  * @param {string} password
  * @returns {Promise<User>}
  */
@@ -19,17 +16,11 @@ const createUser = async (
   name: string,
   email: string,
   phone: string,
-  role: Role = Role.SUPER_USER,
-  companyId?: string, // Optional company ID to link the user to a specific company
-  password?: string
+  password: string,
+  role: Role = Role.PARTNER
 ): Promise<User> => {
   if (await getUserByEmail(email)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
-  }
-
-  let encryptedPassword;
-  if (password) {
-    encryptedPassword = await encryptPassword(password);
+    throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken!");
   }
 
   // Prepare user data including optional company linkage
@@ -38,14 +29,7 @@ const createUser = async (
     email,
     phone,
     role,
-    isEmailVerified: !!password,
-    companyRegistered: !!companyId,
-    Companies: companyId
-      ? {
-          connect: { id: companyId }, // This assumes the company already exists and connects the user to it
-        }
-      : undefined,
-    password: password ? encryptedPassword : null,
+    password: await encryptPassword(password),
   };
 
   const user = await prisma.user.create({
@@ -172,7 +156,6 @@ const getUserByEmail = async <Key extends keyof User>(
     "password",
     "role",
     "isEmailVerified",
-    "companyRegistered",
     "status",
     "createdAt",
     "updatedAt",
@@ -244,36 +227,6 @@ const deleteUserById = async (userId: string): Promise<User> => {
   return updatedUser;
 };
 
-/**
- * Update user password and status
- * @param {string} userId - The user ID
- * @param {string} newPassword - The new password to be set
- * @returns {Promise<Pick<User, 'id' | 'status'>>}
- */
-const updateUserPasswordAndStatus = async (
-  userId: string,
-  newPassword: string
-): Promise<Pick<User, "id" | "status"> | null> => {
-  const user = await getUserById(userId, ["id", "email", "name"]);
-  if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
-  }
-
-  const updatedUser = await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      password: await encryptPassword(newPassword),
-      status: true,
-    },
-    select: {
-      id: true,
-      status: true,
-    },
-  });
-
-  return updatedUser;
-};
-
 export default {
   createUser,
   queryUsers,
@@ -281,5 +234,4 @@ export default {
   getUserByEmail,
   updateUserById,
   deleteUserById,
-  updateUserPasswordAndStatus,
 };

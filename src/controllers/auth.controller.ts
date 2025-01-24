@@ -11,9 +11,9 @@ import sendResponse from "../utils/responseHandler";
 import ApiError from "../utils/ApiError";
 
 const register = catchAsync(async (req, res) => {
-  const { email, name, phone } = req.body;
+  const { email, name, phone, password } = req.body;
 
-  const user = await userService.createUser(name, email, phone);
+  const user = await userService.createUser(name, email, phone, password);
 
   // Generate OTP and token
   const { otp, token } = await authService.generateAndSaveOTP(user);
@@ -28,22 +28,52 @@ const register = catchAsync(async (req, res) => {
   );
 });
 
-const createPassword = catchAsync(async (req, res) => {
+const verifyOTP = catchAsync(async (req, res) => {
+  const { otp, token } = req.body;
+
+  try {
+    const user = await authService.verifyOTPService(otp, token);
+
+    const tokens = await tokenService.generateAuthTokens(user);
+
+    if (!tokens.refresh) {
+      return sendResponse(
+        res,
+        httpStatus.INTERNAL_SERVER_ERROR,
+        false,
+        null,
+        "Error generating tokens"
+      );
+    }
+
+    sendResponse(
+      res,
+      httpStatus.OK,
+      true,
+      {
+        tokens: {
+          accessToken: tokens.access.token,
+          refreshToken: tokens.refresh.token,
+        },
+      },
+      "OTP verified successfully."
+    );
+  } catch (error) {
+    sendResponse(
+      res,
+      httpStatus.INTERNAL_SERVER_ERROR,
+      false,
+      null,
+      "OTP verification failed. Try again!"
+    );
+  }
+});
+
+const resendVerificationEmail = catchAsync(async (req, res) => {
   const user = req.user as User;
-  const userId = user.id;
-  const { password } = req.body;
-  await userService.updateUserPasswordAndStatus(userId, password);
-  const tokens = await tokenService.generateAuthTokens(user);
-
-  await emailService.sendAccountCreationEmail(user.email, user.name);
-
-  sendResponse(
-    res,
-    httpStatus.OK,
-    true,
-    { tokens },
-    "Password created successfully"
-  );
+  const verifyEmailToken = await tokenService.generateVerifyEmailToken(user);
+  await emailService.sendVerificationEmail(user.email, verifyEmailToken);
+  res.status(httpStatus.NO_CONTENT).send();
 });
 
 const login = catchAsync(async (req, res) => {
@@ -246,68 +276,13 @@ const resetPassword = catchAsync(async (req, res) => {
   res.status(httpStatus.NO_CONTENT).send();
 });
 
-const sendVerificationEmail = catchAsync(async (req, res) => {
-  const user = req.user as User;
-  const verifyEmailToken = await tokenService.generateVerifyEmailToken(user);
-  await emailService.sendVerificationEmail(user.email, verifyEmailToken);
-  res.status(httpStatus.NO_CONTENT).send();
-});
-
-const verifyEmail = catchAsync(async (req, res) => {
-  await authService.verifyEmail(req.query.token as string);
-  res.status(httpStatus.NO_CONTENT).send();
-});
-
-const verifyOTP = catchAsync(async (req, res) => {
-  const { otp, token } = req.body;
-
-  try {
-    const user = await authService.verifyOTPService(otp, token);
-
-    const tokens = await tokenService.generateAuthTokens(user);
-
-    if (!tokens.refresh) {
-      return sendResponse(
-        res,
-        httpStatus.INTERNAL_SERVER_ERROR,
-        false,
-        null,
-        "Error generating tokens"
-      );
-    }
-
-    sendResponse(
-      res,
-      httpStatus.OK,
-      true,
-      {
-        tokens: {
-          accessToken: tokens.access.token,
-          refreshToken: tokens.refresh.token,
-        },
-      },
-      "OTP verified successfully."
-    );
-  } catch (error) {
-    sendResponse(
-      res,
-      httpStatus.INTERNAL_SERVER_ERROR,
-      false,
-      null,
-      "OTP verification failed. Try again!"
-    );
-  }
-});
-
 export default {
   register,
+  verifyOTP,
+  resendVerificationEmail,
   login,
   logout,
   refreshTokens,
   forgotPassword,
   resetPassword,
-  sendVerificationEmail,
-  verifyEmail,
-  createPassword,
-  verifyOTP,
 };

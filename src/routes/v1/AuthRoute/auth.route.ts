@@ -14,16 +14,9 @@ router.post(
 router.get(
   "/resend-verification-email",
   auth(),
-  authController.sendVerificationEmail
+  authController.resendVerificationEmail
 );
-router.get("/verify-email", authController.verifyEmail);
 router.post("/verify-otp", authController.verifyOTP);
-router.post(
-  "/create-password",
-  auth("createPassword"),
-  validate(authValidation.createPassword),
-  authController.createPassword
-);
 router.post("/login", validate(authValidation.login), authController.login);
 router.post("/logout", authController.logout);
 router.post("/refresh-tokens", authController.refreshTokens);
@@ -32,6 +25,10 @@ router.post(
   validate(authValidation.forgotPassword),
   authController.forgotPassword
 );
-router.post("/reset-password", authController.resetPassword);
+router.post(
+  "/reset-password",
+  validate(authValidation.resetPassword),
+  authController.resetPassword
+);
 
 export default router;

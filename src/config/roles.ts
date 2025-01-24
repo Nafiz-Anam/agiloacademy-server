@@ -25,7 +25,7 @@ const allRoles = {
     "updatePaymentRequest",
     "confirmPaymentRequest",
   ],
-  [Role.SUPER_USER]: [
+  [Role.PARTNER]: [
     "createPassword",
     "createUser",
     "getUsers",

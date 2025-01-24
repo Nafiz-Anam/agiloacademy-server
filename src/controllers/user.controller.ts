@@ -7,7 +7,7 @@ import sendResponse from "../utils/responseHandler";
 import { Prisma, User } from "@prisma/client";
 
 const createUser = catchAsync(async (req, res) => {
-  const { email, password, name, role, companyId, phone } = req.body;
+  const { email, password, name, role, phone } = req.body;
 
   try {
     const user = await userService.createUser(
@@ -15,7 +15,6 @@ const createUser = catchAsync(async (req, res) => {
       email,
       phone,
       role,
-      companyId,
       password
     );
     res.status(httpStatus.CREATED).send(user);

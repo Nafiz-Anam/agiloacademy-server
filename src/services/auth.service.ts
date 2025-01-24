@@ -7,7 +7,6 @@ import prisma from "../client";
 import { encryptPassword, isPasswordMatch } from "../utils/encryption";
 import { AuthTokensResponse } from "../types/response";
 import exclude from "../utils/exclude";
-
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 
@@ -128,30 +127,10 @@ const resetPassword = async (
 };
 
 /**
- * Verify email
- * @param {string} verifyEmailToken
- * @returns {Promise<void>}
+ * Generate and save OTP
+ * @param {User} user
+ * @returns {Promise<{ otp: string, token: string }>}
  */
-const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
-  try {
-    const verifyEmailTokenData = await tokenService.verifyToken(
-      verifyEmailToken,
-      TokenType.VERIFY_EMAIL
-    );
-    await prisma.token.deleteMany({
-      where: {
-        userId: verifyEmailTokenData.userId,
-        type: TokenType.VERIFY_EMAIL,
-      },
-    });
-    await userService.updateUserById(verifyEmailTokenData.userId, {
-      isEmailVerified: true,
-    });
-  } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, "Email verification failed");
-  }
-};
-
 const generateAndSaveOTP = async (user: User) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
   const token = uuidv4();
@@ -169,6 +148,12 @@ const generateAndSaveOTP = async (user: User) => {
   return { otp, token };
 };
 
+/**
+ *
+ * @param otp
+ * @param token
+ * @returns {Promise<User>}
+ */
 const verifyOTPService = async (otp: string, token: string) => {
   const otpEntry = await prisma.oTP.findUnique({
     where: { token },
@@ -185,7 +170,7 @@ const verifyOTPService = async (otp: string, token: string) => {
   // Mark email as verified and remove the OTP entry
   await prisma.user.update({
     where: { id: otpEntry.userId },
-    data: { isEmailVerified: true },
+    data: { isEmailVerified: true, status: true },
   });
 
   await prisma.oTP.delete({
@@ -213,7 +198,6 @@ export default {
   logout,
   refreshAuth,
   resetPassword,
-  verifyEmail,
   generateAndSaveOTP,
   verifyOTPService,
 };

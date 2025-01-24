@@ -18,38 +18,11 @@ const authValidation = {
       "any.required": "Phone number is required",
       "string.empty": "Phone number cannot be empty",
     }),
-    // company_name: Joi.string().required().messages({
-    //   "any.required": "Company Name is required",
-    //   "string.empty": "Company Name cannot be empty",
-    // }),
-    // company_type: Joi.string()
-    //   .valid(
-    //     "HOSPITALITY",
-    //     "MANUFACTURING",
-    //     "REAL_ESTATE",
-    //     "TRADING_OR_SERVICES",
-    //     "INFRASTRUCTURE"
-    //   )
-    //   .required()
-    //   .messages({
-    //     "any.required": "Company type is required",
-    //     "any.only":
-    //       "Invalid company type, must be one of HOSPITALITY, MANUFACTURING, REAL_ESTATE, TRADING_OR_SERVICES, or INFRASTRUCTURE",
-    //     "string.empty": "Company type cannot be empty",
-    //   }),
-  }),
-
-  createPassword: Joi.object({
     password: Joi.string().pattern(passwordRegex).required().messages({
       "string.pattern.base":
         "Password must be at least 10 characters long, with at least one uppercase letter, one lowercase letter, one digit, and one special character, without spaces",
       "any.required": "Password is required",
       "string.empty": "Password cannot be empty",
-    }),
-    confirm_password: Joi.any().valid(Joi.ref("password")).required().messages({
-      "any.only": "Confirm password does not match",
-      "any.required": "Confirm password is required",
-      "string.empty": "Confirm password cannot be empty",
     }),
   }),
 
@@ -70,6 +43,15 @@ const authValidation = {
       "string.email": "Invalid email format",
       "any.required": "Email is required",
       "string.empty": "Email cannot be empty",
+    }),
+  }),
+
+  resetPassword: Joi.object({
+    password: Joi.string().pattern(passwordRegex).required().messages({
+      "string.pattern.base":
+        "Password must be at least 10 characters long, with at least one uppercase letter, one lowercase letter, one digit, and one special character, without spaces",
+      "any.required": "Password is required",
+      "string.empty": "Password cannot be empty",
     }),
   }),
 };
