@@ -14,7 +14,7 @@ model User {
   email           String        @unique
   phone           String
   name            String
-  password        String?
+  password        String
   role            Role
   isEmailVerified Boolean       @default(false)
   status          Boolean       @default(false)
@@ -37,12 +37,11 @@ model Student {
   name       String
   email      String      @unique
   phone      String
-  feesPaid   Float
-  totalFees  Float
-  password   String      @default("12345678") // Default password for student portal
-  admissions Admission[]
+  password   String
+  deleted    Boolean     @default(false)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+  admissions Admission[]
 }
 
 model Admission {
@@ -63,7 +62,7 @@ model Transaction {
   description  String?
   documentLink String? // Link to uploaded document (for expenses or other transactions)
   userId       String // Reference to user who recorded it
-  user         User?           @relation(fields: [userId], references: [id])
+  user         User            @relation(fields: [userId], references: [id])
   Admission    Admission?
   createdAt    DateTime        @default(now())
 }

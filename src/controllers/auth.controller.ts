@@ -69,13 +69,6 @@ const verifyOTP = catchAsync(async (req, res) => {
   }
 });
 
-const resendVerificationEmail = catchAsync(async (req, res) => {
-  const user = req.user as User;
-  const verifyEmailToken = await tokenService.generateVerifyEmailToken(user);
-  await emailService.sendVerificationEmail(user.email, verifyEmailToken);
-  res.status(httpStatus.NO_CONTENT).send();
-});
-
 const login = catchAsync(async (req, res) => {
   const clientType = req.headers["x-client-type"];
   const { email, password } = req.body;
@@ -279,7 +272,6 @@ const resetPassword = catchAsync(async (req, res) => {
 export default {
   register,
   verifyOTP,
-  resendVerificationEmail,
   login,
   logout,
   refreshTokens,
